@@ -30,3 +30,17 @@ get obsecureSignupConfirmPasswordProvider => StateProvider<bool>((ref) {
 get obsecureSignInPasswordProvider => StateProvider<bool>((ref) {
       return true;
     });
+
+// call alert dialog Provider
+final callAlertDialogProvider = StateProvider<bool>((ref) => false);
+
+//Add Task Providers (task Name , Task Description , Task due date)
+final taskNameProvider = StateProvider<TextEditingController>((ref) {
+  return TextEditingController();
+});
+final taskDescriptionProvider = StateProvider<TextEditingController>((ref) {
+  return TextEditingController();
+});
+// Task Due Date Provider
+final dateControllerProvider =
+    StateProvider<TextEditingController>((ref) => TextEditingController());
