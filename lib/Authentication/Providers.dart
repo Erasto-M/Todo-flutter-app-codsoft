@@ -1,7 +1,16 @@
-//controller Providers
-
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:todo_list_codsoft/firebase_options.dart';
+
+//Initialize firebase Provider
+final initializeFirebaseProvider = FutureProvider(<FirebaseApp>(ref) async {
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+  return Firebase.app();
+});
+//controller Providers
 
 final fullNameProvider = Provider.autoDispose<TextEditingController>((ref) {
   return TextEditingController();
