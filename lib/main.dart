@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:todo_list_codsoft/Authentication/HomePage/home_bottom_nav.dart';
 import 'package:todo_list_codsoft/Authentication/HomePage/home_screen.dart';
 import 'package:todo_list_codsoft/Authentication/Providers.dart';
 import 'package:todo_list_codsoft/Authentication/login_Screen.dart';
@@ -21,7 +22,7 @@ class MyApp extends ConsumerWidget {
     final initializeFirebase = ref.watch(initializeFirebaseProvider);
     return MaterialApp(
       home: initializeFirebase.when(data: (data) {
-        return const HomeScreen();
+        return LoginScreen();
       }, error: (err, _) {
         return Text(err.toString());
       }, loading: () {

@@ -2,9 +2,10 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:todo_list_codsoft/Authentication/HomePage/add_task_dialog.dart';
 import 'package:todo_list_codsoft/Authentication/Providers.dart';
-import 'package:intl/intl.dart';
 import 'package:todo_list_codsoft/Models/add_task_model.dart';
+import 'package:todo_list_codsoft/Services/firebase_auth_services.dart';
 import 'package:todo_list_codsoft/Services/firebase_firestore_services.dart';
 
 class HomeScreen extends ConsumerWidget {
@@ -12,14 +13,118 @@ class HomeScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isAlertDialogCalled = ref.watch(callAlertDialogProvider);
+    final getTasksFromFirebase = ref.watch(getTasksFromFirebaseProvider);
     return SafeArea(
       child: Scaffold(
-          body: const SingleChildScrollView(
-            child: Column(
-              children: [],
+          appBar: AppBar(
+            leading: const Icon(
+              Icons.menu,
+              color: Colors.white,
             ),
+            actions: [
+              IconButton(
+                  onPressed: () {
+                    ref.read(firebaseAuthServiceProvider).signOutUser(context);
+                  },
+                  icon: const Icon(
+                    Icons.logout,
+                    color: Colors.white,
+                  )),
+            ],
+            backgroundColor: Colors.blue,
+            title: const Text(
+              "My Tasks",
+              style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 25,
+                  fontWeight: FontWeight.bold),
+            ),
+            centerTitle: true,
           ),
+          body: getTasksFromFirebase.when(data: (data) {
+            return ListView.builder(
+                itemCount: data.length,
+                itemBuilder: (context, index) {
+                  // reference to the add task model
+                  AddTaskModel tasks = data[index];
+                  if (data != null) {
+                    return Container(
+                        margin:
+                            const EdgeInsets.only(left: 5, right: 5, top: 5),
+                        // ignore: prefer_const_constructors
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 5, vertical: 5),
+                        decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(10),
+                            boxShadow: const [
+                              BoxShadow(
+                                  color: Colors.grey,
+                                  blurRadius: 3,
+                                  offset: Offset(0, 0.3))
+                            ]),
+                        child: ListTile(
+                          leading: const Checkbox(
+                            value: false,
+                            onChanged: null,
+                          ),
+                          title: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                tasks.taskName,
+                                style: const TextStyle(
+                                    color: Colors.black,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 20),
+                              ),
+                              const SizedBox(
+                                height: 5,
+                              ),
+                              Text(
+                                tasks.taskDescription,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                    color: Colors.black,
+                                    fontWeight: FontWeight.normal,
+                                    fontSize: 15),
+                              ),
+                            ],
+                          ),
+                          subtitle: Row(
+                            children: [Text("Task Due  ${tasks.dueDate}")],
+                          ),
+                          trailing: IconButton(
+                            onPressed: () {
+                              ref
+                                  .read(firebaseFirestoreServicesProvider)
+                                  .deleteTask(tasks.taskId!);
+                            },
+                            icon: const Icon(
+                              Icons.delete,
+                              color: Colors.blue,
+                            ),
+                          ),
+                        ));
+                  } else {
+                    return const Center(
+                      child: Text(
+                          "No Tasks Added Yet , Click the Add button to add a task"),
+                    );
+                  }
+                });
+          }, error: (err, stackTrace) {
+            return Text(err.toString());
+          }, loading: () {
+            return const Center(
+              child: CircularProgressIndicator(
+                color: Colors.blue,
+              ),
+            );
+          }),
+          //Floating action button
+          // calls alert dialog when pressed
           floatingActionButtonLocation:
               FloatingActionButtonLocation.centerFloat,
           floatingActionButton: Consumer(
@@ -29,7 +134,8 @@ class HomeScreen extends ConsumerWidget {
                   final showDialogCurrentState =
                       ref.read(callAlertDialogProvider.notifier).state = true;
                   if (showDialogCurrentState) {
-                    return _showAlertDialog(context);
+                    // ignore: void_checks
+                    return showAlertDialog(context);
                   } else {
                     const SizedBox();
                   }
@@ -46,150 +152,5 @@ class HomeScreen extends ConsumerWidget {
             },
           )),
     );
-  }
-
-  void _showAlertDialog(BuildContext context) {
-    showDialog(
-        context: context,
-        builder: (context) {
-          return Consumer(
-            builder: (context, ref, child) {
-              final taskNameController = ref.watch(taskNameProvider);
-              final taskDescriptionController =
-                  ref.watch(taskDescriptionProvider);
-              final dueDateController = ref.watch(dateControllerProvider);
-              GlobalKey<FormState> addTaskKey = GlobalKey<FormState>();
-              return AlertDialog(
-                shape: const RoundedRectangleBorder(),
-                title: const Center(
-                    child: Text(
-                  "Add A Task",
-                  style: TextStyle(
-                      color: Colors.blue,
-                      fontWeight: FontWeight.w500,
-                      fontSize: 20),
-                )),
-                content: Container(
-                  height: 400,
-                  child: Form(
-                    key: addTaskKey,
-                    child: SingleChildScrollView(
-                      child: Column(
-                        children: [
-                          TextFormField(
-                            controller: taskNameController,
-                            validator: (value) {
-                              if (value!.isEmpty || value == '') {
-                                return "Task name field cannot be empty";
-                              }
-                              return null;
-                            },
-                            keyboardType: TextInputType.text,
-                            decoration: InputDecoration(
-                              labelText: "Task Name",
-                              prefixIcon: const Icon(Icons.title_outlined),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(5),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(
-                            height: 10,
-                          ),
-                          TextFormField(
-                            controller: taskDescriptionController,
-                            validator: (value) {
-                              if (value!.isEmpty || value == '') {
-                                return "Task Description field cannot be empty";
-                              }
-                              return null;
-                            },
-                            maxLines: 3,
-                            keyboardType: TextInputType.text,
-                            decoration: InputDecoration(
-                              labelText: "Task Description",
-                              prefixIcon:
-                                  const Icon(Icons.description_outlined),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(5),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(
-                            height: 10,
-                          ),
-                          TextFormField(
-                            controller: dueDateController,
-                            validator: (value) {
-                              if (value!.isEmpty || value == '') {
-                                return "Please select a due date ";
-                              }
-                              return null;
-                            },
-                            readOnly: true,
-                            keyboardType: TextInputType.text,
-                            decoration: InputDecoration(
-                              labelText: "Task due date",
-                              prefixIcon: const Icon(Icons.calendar_today),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(5),
-                              ),
-                            ),
-                            onTap: () async {
-                              DateTime? pickedDate = await showDatePicker(
-                                  context: context,
-                                  firstDate: DateTime.now(),
-                                  initialDate: DateTime.now(),
-                                  lastDate: DateTime(2025));
-                              if (pickedDate != null) {
-                                String dateFormat = DateFormat("dd - MM - yyyy")
-                                    .format(pickedDate);
-                                ref
-                                        .read(dateControllerProvider.notifier)
-                                        .state =
-                                    TextEditingController(text: dateFormat);
-                              }
-                            },
-                          ),
-                          const SizedBox(
-                            height: 15,
-                          ),
-                          GestureDetector(
-                            onTap: () async {
-                              if (addTaskKey.currentState!.validate()) {
-                                AddTaskModel addTaskModel = AddTaskModel(
-                                    taskName: taskNameController.text,
-                                    taskDescription: taskNameController.text,
-                                    dueDate: dueDateController.text);
-                                await ref
-                                    .read(firebaseFirestoreServicesProvider)
-                                    .createTask(addTaskModel);
-                              }
-                            },
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 60, vertical: 10),
-                              decoration: BoxDecoration(
-                                color: Colors.blue,
-                                borderRadius: BorderRadius.circular(5),
-                              ),
-                              child: const Text(
-                                "Create Task",
-                                style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                    fontSize: 20),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              );
-            },
-          );
-        });
   }
 }
