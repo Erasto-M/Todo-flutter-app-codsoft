@@ -4,6 +4,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:todo_list_codsoft/Authentication/Providers.dart';
 import 'package:todo_list_codsoft/Authentication/login_Screen.dart';
+import 'package:todo_list_codsoft/Services/firebase_auth_services.dart';
 
 class SignUpScreen extends ConsumerWidget {
   SignUpScreen({super.key});
@@ -171,42 +172,74 @@ class SignUpScreen extends ConsumerWidget {
                         const SizedBox(
                           height: 20,
                         ),
-                        GestureDetector(
-                          onTap: () {
-                            if (formkey.currentState!.validate()) {
-                              print("Form is validate");
-                            }
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 40,
-                              vertical: 10,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.blue,
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            width: MediaQuery.of(context).size.width,
-                            child: const Row(
-                              children: [
-                                Text(
-                                  "Create Account",
-                                  style: TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 25),
+                        isLoading
+                            ? const CircularProgressIndicator(
+                                color: Colors.blue,
+                              )
+                            : GestureDetector(
+                                onTap: () async {
+                                  if (formkey.currentState!.validate()) {
+                                    ref
+                                        .read(loadingIndicatorProvider.notifier)
+                                        .state = true;
+                                    await ref
+                                        .read(firebaseAuthServiceProvider)
+                                        .createUserWithEmailAndPassword(
+                                            context: context,
+                                            email: emailController.text,
+                                            password: passwordController.text,
+                                            fullName: fullnameController.text);
+                                    ref
+                                        .read(emailProvider.notifier)
+                                        .state
+                                        .clear();
+                                    ref
+                                        .read(passwordProvider.notifier)
+                                        .state
+                                        .clear();
+                                    ref
+                                        .read(fullNameProvider.notifier)
+                                        .state
+                                        .clear();
+                                    ref
+                                        .read(confirmPasswordProvider.notifier)
+                                        .state
+                                        .clear();
+                                    ref
+                                        .read(loadingIndicatorProvider.notifier)
+                                        .state = false;
+                                  }
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 40,
+                                    vertical: 10,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.blue,
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  width: MediaQuery.of(context).size.width,
+                                  child: const Row(
+                                    children: [
+                                      Text(
+                                        "Create Account",
+                                        style: TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 25),
+                                      ),
+                                      SizedBox(
+                                        width: 30,
+                                      ),
+                                      Icon(
+                                        Icons.arrow_forward,
+                                        color: Colors.white,
+                                      )
+                                    ],
+                                  ),
                                 ),
-                                SizedBox(
-                                  width: 30,
-                                ),
-                                Icon(
-                                  Icons.arrow_forward,
-                                  color: Colors.white,
-                                )
-                              ],
-                            ),
-                          ),
-                        ),
+                              ),
                         const SizedBox(
                           height: 10,
                         ),

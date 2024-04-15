@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:todo_list_codsoft/Authentication/Providers.dart';
 import 'package:todo_list_codsoft/Authentication/sign_up_screen.dart';
+import 'package:todo_list_codsoft/Services/firebase_auth_services.dart';
 
 class LoginScreen extends ConsumerWidget {
   LoginScreen({super.key});
@@ -12,6 +13,7 @@ class LoginScreen extends ConsumerWidget {
     // controllers
     final emailController = ref.watch(emailProvider);
     final passwordController = ref.watch(passwordProvider);
+    final isLoading = ref.watch(loadingIndicatorProvider);
     return SafeArea(
       child: Scaffold(
         backgroundColor: Colors.blue,
@@ -108,43 +110,66 @@ class LoginScreen extends ConsumerWidget {
                         const SizedBox(
                           height: 20,
                         ),
-                        GestureDetector(
-                          onTap: () {
-                            if (loginFormkey.currentState!.validate()) {
-                              print("Form validated");
-                            }
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 40,
-                              vertical: 10,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.blue,
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            width: MediaQuery.of(context).size.width,
-                            child: const Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(
-                                  "Login",
-                                  style: TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 25),
+                        isLoading
+                            ? const CircularProgressIndicator(
+                                color: Colors.blue,
+                              )
+                            : GestureDetector(
+                                onTap: () async {
+                                  if (loginFormkey.currentState!.validate()) {
+                                    ref
+                                        .read(loadingIndicatorProvider.notifier)
+                                        .state = true;
+                                    await ref
+                                        .read(firebaseAuthServiceProvider)
+                                        .signInUserWithEmailAndPassword(
+                                            context: context,
+                                            email: emailController.text,
+                                            password: passwordController.text);
+                                    ref
+                                        .read(emailProvider.notifier)
+                                        .state
+                                        .clear();
+                                    ref
+                                        .read(passwordProvider.notifier)
+                                        .state
+                                        .clear();
+                                    ref
+                                        .read(loadingIndicatorProvider.notifier)
+                                        .state = false;
+                                  }
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 40,
+                                    vertical: 10,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.blue,
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  width: MediaQuery.of(context).size.width,
+                                  child: const Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Text(
+                                        "Login",
+                                        style: TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 25),
+                                      ),
+                                      SizedBox(
+                                        width: 30,
+                                      ),
+                                      Icon(
+                                        Icons.arrow_forward,
+                                        color: Colors.white,
+                                      )
+                                    ],
+                                  ),
                                 ),
-                                SizedBox(
-                                  width: 30,
-                                ),
-                                Icon(
-                                  Icons.arrow_forward,
-                                  color: Colors.white,
-                                )
-                              ],
-                            ),
-                          ),
-                        ),
+                              ),
                         const SizedBox(
                           height: 10,
                         ),
